@@ -1,103 +1,194 @@
-import Image from "next/image";
+'use client'
 
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
+import { WasteReport } from '@/lib/types'
+import MapComponent from '@/components/MapComponent'
+import UploadComponent from '@/components/UploadComponent'
+import ReportModal from '@/components/ReportModal'
+
+/**
+ * Main application page for the Waste Management MVP
+ * Features:
+ * - MapTiler base map with Deck.gl heatmap overlay
+ * - Real-time waste report visualization
+ * - Photo upload with geolocation capture
+ * - Detailed report viewing modal
+ */
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // State management for application data and UI
+  const [reports, setReports] = useState<WasteReport[]>([])
+  const [selectedReport, setSelectedReport] = useState<WasteReport | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string>('')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  /**
+   * Fetches all waste reports from Supabase database
+   * Called on initial load and after new uploads
+   */
+  const fetchReports = useCallback(async () => {
+    try {
+      setError('')
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      setReports(data || [])
+    } catch (err) {
+      console.error('Error fetching reports:', err)
+      setError('Failed to load reports')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  /**
+   * Sets up real-time subscription to listen for new reports
+   * Automatically updates the heatmap when new data arrives
+   */
+  useEffect(() => {
+    // Initial data fetch
+    fetchReports()
+
+    // Set up real-time subscription for new reports
+    const channel = supabase
+      .channel('reports-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'reports',
+        },
+        (payload) => {
+          console.log('New report received:', payload.new)
+          // Add new report to existing reports
+          setReports((currentReports) => [
+            payload.new as WasteReport,
+            ...currentReports,
+          ])
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on component unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchReports])
+
+  /**
+   * Handles successful photo upload
+   * Refreshes the reports data to include the new submission
+   */
+  const handleUploadSuccess = useCallback(() => {
+    fetchReports()
+  }, [fetchReports])
+
+  /**
+   * Handles report selection from heatmap clicks
+   * Opens the detailed report modal
+   */
+  const handleReportClick = useCallback((report: WasteReport) => {
+    setSelectedReport(report)
+    setIsModalOpen(true)
+  }, [])
+
+  /**
+   * Closes the report detail modal
+   */
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false)
+    setSelectedReport(null)
+  }, [])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading waste reports...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchReports}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-screen w-screen relative overflow-hidden">
+      {/* Main map view with heatmap overlay */}
+      <MapComponent
+        reports={reports}
+        onReportClick={handleReportClick}
+      />
+
+      {/* Upload component positioned in the top-right corner */}
+      <div className="absolute top-4 right-4 w-80 z-10">
+        <UploadComponent onUploadSuccess={handleUploadSuccess} />
+      </div>
+
+      {/* Report detail modal */}
+      <ReportModal
+        report={selectedReport}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
+
+      {/* Application footer with stats */}
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
+        <div className="text-sm text-gray-600">
+          <div className="font-semibold text-gray-800 mb-1">
+            Waste Management System
+          </div>
+          <div className="flex items-center gap-4">
+            <span>📊 {reports.length} total reports</span>
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <span>Live updates</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Instructions overlay for first-time users */}
+      {reports.length === 0 && (
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-20">
+          <div className="bg-white rounded-lg p-6 mx-4 max-w-md text-center shadow-2xl">
+            <div className="text-4xl mb-4">🗺️</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Welcome to Waste Management
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Report waste issues by uploading a photo. Your location will be captured automatically and displayed on the heat map.
+            </p>
+            <div className="text-sm text-gray-500">
+              📱 Enable location access • 📷 Take a photo • 🗺️ See real-time updates
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

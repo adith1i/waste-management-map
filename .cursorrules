@@ -1,0 +1,53 @@
+# Cursor Rules Configuration
+
+## MAIN RULES
+
+## General Settings
+- Never implement more than what I ask for
+- Keep any new ideas you have at the end of the prompt
+- Dont add new stuff  without my knowledge
+- Keep fixing the error till it clears out
+- Clear all linter errors before finishing the prompt
+- Always use .env file only in code
+
+## Code Formatting
+- I need proper indentation for better readability
+- dont clutter the code in order to reduce lines
+- Keep  it clean and open to read easily
+- Keep adding multiple comments everywhere neccessary
+
+## Linting Rules
+- Check the packages and check the proper versions
+- Dont ignore any sort of linter  errors
+- Handle them in such  a way it doesnt break anything
+- Think of two or three  different approaches before you fix any error
+- Go for the best possible one on your own without asking me
+- Use Context7 MCP everytime to clear the errors
+- Use sequential MCP thinking to properly go through errors and fix them
+
+## Editor Behavior
+- Keep the code easier to read
+- ADD COMMENTS EVERYWHERE
+- ADD COMMENTS FOR EACH FUNCTIONALITY
+- ADD COMMENTS SO THAT ITS EASIER FOR ANYONE TO GO THROUGH IT
+
+## File Handling
+- Dont delete the files without proper checking before deleting
+- Dont delete any file without checking where its used elesewhere, so the project doesnt break
+- Delete only if its completely unnecessary
+- Delete the folders which are left empty
+- Delete ONLY IF NECESSARY AND SERVES NO PURPOSE
+
+## Testing
+- Dont run the instance unless I ask you to do so
+- Dont create a new Terminal right after prompting or adding a new feature
+- Dont run npm run build at all
+- Dont run the eslint at all
+
+## AI Assistant Preferences
+- Begin the prompt with  " 🤖 : " always
+- Explain first on how you are going to approach my prompt
+- If we are moving with a problem first write down 3 paragraphs about how it can be approached
+- Solve the problem according to the best possible approach
+- After solving or editing, Explain in detail or short according to how its needed using bullet points
+- Explain the complete technical approach at the end
