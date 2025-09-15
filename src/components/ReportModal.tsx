@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { WasteReport } from '@/lib/types'
 
 interface ReportModalProps {
@@ -77,9 +78,11 @@ export default function ReportModal({ report, isOpen, onClose }: ReportModalProp
         <div className="p-4 overflow-y-auto">
           {/* Photo display */}
           <div className="mb-6">
-            <img
+            <Image
               src={report.photo_url}
               alt="Waste report photo"
+              width={500}
+              height={256}
               className="w-full h-64 object-cover rounded-lg shadow-md"
               onError={(e) => {
                 // Handle broken image

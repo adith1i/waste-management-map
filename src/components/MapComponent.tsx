@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Map } from 'react-map-gl/maplibre'
 import { DeckGL } from '@deck.gl/react'
 import { HeatmapLayer } from '@deck.gl/aggregation-layers'
+import type { PickingInfo } from '@deck.gl/core'
 import { WasteReport } from '@/lib/types'
-import { supabase } from '@/lib/supabase'
 
 // MapTiler style URL with API key from environment variables
 const MAPTILER_STYLE = `https://api.maptiler.com/maps/streets/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_API_KEY}`
@@ -51,11 +51,12 @@ export default function MapComponent({ reports, onReportClick }: MapComponentPro
       ],
       aggregation: 'SUM',
       pickable: true,
-      onClick: (info: any) => {
+      onClick: (info: PickingInfo<WasteReport>) => {
         // Handle click events on heatmap
         if (info.object && onReportClick) {
           onReportClick(info.object)
         }
+        return true
       },
     }),
   ]
@@ -65,7 +66,7 @@ export default function MapComponent({ reports, onReportClick }: MapComponentPro
       {/* Deck.gl overlay with heatmap layer */}
       <DeckGL
         viewState={viewState}
-        onViewStateChange={({ viewState }) => setViewState(viewState)}
+        onViewStateChange={({ viewState }) => setViewState(viewState as typeof INITIAL_VIEW_STATE)}
         layers={layers}
         controller={true}
         style={{ width: '100%', height: '100%' }}

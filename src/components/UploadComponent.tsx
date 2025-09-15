@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { getCurrentLocation } from '@/utils/geolocation'
 import { CreateWasteReport } from '@/lib/types'
@@ -69,7 +70,7 @@ export default function UploadComponent({ onUploadSuccess }: UploadComponentProp
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
       const filePath = `photos/${fileName}`
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('waste-photos')
         .upload(filePath, selectedFile)
 
@@ -165,9 +166,11 @@ export default function UploadComponent({ onUploadSuccess }: UploadComponentProp
       {/* Photo preview */}
       {previewUrl && (
         <div className="mb-4">
-          <img
+          <Image
             src={previewUrl}
             alt="Preview"
+            width={300}
+            height={128}
             className="w-full h-32 object-cover rounded-lg"
           />
         </div>
